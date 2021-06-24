@@ -5,7 +5,7 @@ import { focus } from '@wordpress/dom';
 import { TAB, ESCAPE } from '@wordpress/keycodes';
 import { useSelect, useDispatch } from '@wordpress/data';
 import { useRefEffect, useMergeRefs } from '@wordpress/compose';
-import { useRef } from '@wordpress/element';
+import { useRef, useState } from '@wordpress/element';
 
 /**
  * Internal dependencies
@@ -22,6 +22,19 @@ function isFormElement( element ) {
 	);
 }
 
+const SCROLLABLE_CONTENT = '.interface-interface-skeleton__content';
+
+// Two divs are inserted before and after block list content. When tabbing avoid
+// scrolling to top or bottom of content
+const fixFocusCaptureScroll = ( focusableElement, scroll ) => {
+	if ( scroll >= 0 ) {
+		focusableElement.closest( SCROLLABLE_CONTENT ).scrollTop = scroll;
+	} else {
+		//TODO: fallback + site editor is iframed, find a better alternative
+		focusableElement.scrollIntoView();
+	}
+};
+
 export default function useTabNav() {
 	const container = useRef();
 	const focusCaptureBeforeRef = useRef();
@@ -35,6 +48,7 @@ export default function useTabNav() {
 		( select ) => select( blockEditorStore ).isNavigationMode(),
 		[]
 	);
+	const [ scroll, setScroll ] = useState( 0 );
 
 	// Don't allow tabbing to this element in Navigation mode.
 	const focusCaptureTabIndex = ! isNavigationMode ? '0' : undefined;
@@ -49,8 +63,12 @@ export default function useTabNav() {
 			noCapture.current = null;
 		} else if ( hasMultiSelection() ) {
 			container.current.focus();
+			//when focusing on before/after do not scroll to bottom or top of document
+			fixFocusCaptureScroll( container.current, scroll );
 		} else if ( getSelectedBlockClientId() ) {
 			lastFocus.current.focus();
+			//when focusing on before/after do not scroll to bottom or top of document
+			fixFocusCaptureScroll( lastFocus.current, scroll );
 		} else {
 			setNavigationMode( true );
 
@@ -124,6 +142,10 @@ export default function useTabNav() {
 			// (moving focus to the next tabbable element).
 			noCapture.current = true;
 
+			setScroll(
+				container?.current?.closest( SCROLLABLE_CONTENT )?.scrollTop ??
+					-1
+			);
 			// Focusing the focus capture element, which is located above and
 			// below the editor, should not scroll the page all the way up or
 			// down.
