@@ -29,6 +29,7 @@ import {
 	__experimentalLinkControl as LinkControl,
 	useBlockProps,
 	store as blockEditorStore,
+	getColorClassName,
 } from '@wordpress/block-editor';
 import { isURL, prependHTTP } from '@wordpress/url';
 import {
@@ -472,14 +473,16 @@ export default function NavigationLinkEdit( {
 			'has-link': !! url,
 			'has-child': hasDescendants,
 			'has-text-color': !! textColor || !! customTextColor,
-			[ `has-${ textColor }-color` ]: !! textColor && ! customTextColor,
+			[ getColorClassName( 'color', textColor ) ]: !! textColor,
 			'has-background': !! backgroundColor || customBackgroundColor,
-			[ `has-${ backgroundColor }-background-color` ]:
-				!! backgroundColor && ! customBackgroundColor,
+			[ getColorClassName(
+				'background-color',
+				backgroundColor
+			) ]: !! backgroundColor,
 		} ),
 		style: {
-			color: customTextColor,
-			backgroundColor: customBackgroundColor,
+			color: ! textColor && customTextColor,
+			backgroundColor: ! backgroundColor && customBackgroundColor,
 		},
 	} );
 
